@@ -6,6 +6,19 @@ import popl.js.util.JsException
 import scala.util.parsing.input.Positional
 
 object ast:
+  /* JakartaScript Type Expressions */
+  enum Typ:
+    // pretty print as AST
+    override def toString: String = print.prettyAST(this)
+    // pretty print as JS expression
+    def pretty: String = print.prettyTyp(this)
+  
+    case TNumber
+    case TBool
+    case TString
+    case TUndefined
+    case TFunction(ts: List[Typ], tret: Typ)
+
   /* JakartaScript Expressions */
   sealed abstract class Expr extends Positional:
     // pretty print as AST
@@ -17,6 +30,9 @@ object ast:
     // pretty print as value
     def prettyVal: String = print.prettyVal(this)
   end Expr
+
+  /* Function Parameters */
+  type Params = List[(String, Typ)]
 
   /* Literals and Values */
   sealed abstract class Val extends Expr
@@ -47,7 +63,7 @@ object ast:
   case class Print(e1: Expr) extends Expr
 
   /* Functions */
-  case class Function(p: Option[String], xs: List[String], e: Expr) extends Val
+  case class Function(p: Option[String], xs: Params, t: Option[Typ], e: Expr) extends Val
 
   /* Function Calls */
   case class Call(e0: Expr, es: List[Expr]) extends Expr
@@ -88,8 +104,7 @@ object ast:
     case Print(e1: Expr)
 
     /* Functions */
-    case Function(p: Option[String], x: String, es: List[Expr])
-
+    case Function(p: Option[String], xs: Params, t: Option[Typ], e: Expr)
 
     /* Function calls */
     case Call(e0: Expr, es: List[Expr])
@@ -134,7 +149,7 @@ object ast:
       case If(e1, e2, e3) => fv(e1) | fv(e2) | fv(e3)
       case Print(e1) => fv(e1)
       case Call(e0, es) => fv(e0) | (es.toSet flatMap fv)
-      case Function(p, xs, e) => fv(e) -- p -- xs
+      case Function(p, xs, _, e) => fv(e) -- p -- xs.map(_._1)
 
   /* Check whether the given expression is closed. */
   def closed(e: Expr): Boolean = fv(e).isEmpty
@@ -143,12 +158,14 @@ object ast:
   def pretty(v: Val): String = v.toString
 
   /*
-  * Dynamic Type Error exception.  Throw this exception to signal a dynamic type error.
-  *
-  *   throw DynamicTypeError(e)
-  *
-  */
-  case class DynamicTypeError(e: Expr) extends JsException("Dynamic Type Error", e.pos)
+   * Static Type Error exception.  Throw this exception to signal a static
+   * type error.
+   * 
+   *   throw StaticTypeError(tbad, e)
+   * 
+   */
+  case class StaticTypeError(tbad: Typ, e: Expr) extends 
+    JsException("Type Error: unexpected type: " + tbad.pretty, e.pos)
 
   /*
   * Stuck Type Error exception.  Throw this exception to signal getting

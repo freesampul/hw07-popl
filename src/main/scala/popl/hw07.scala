@@ -1,18 +1,16 @@
 package popl
 
-import js.util.JsApp
-
-object hw07 extends JsApp:
+object hw07 extends js.util.JsApp:
   import js.ast._
   import js._
-  import Bop._, Uop._
+  import Uop._, Bop._, Typ._
   /*
    * CSCI-UA.0480-055: Homework 7
-   *
+   * 
    * Replace the '???' expression with your code in each function.
    *
    * Do not make other modifications to this template, such as
-   * - adding "extends App" or "extends Application" to your Lab object,
+   * - adding "extends App" or "extends Application" to your hw08 object,
    * - adding a "main" method, and
    * - leaving any failing asserts.
    * 
@@ -24,89 +22,125 @@ object hw07 extends JsApp:
    *
    */
 
-  /* Collections and Higher-Order Functions */
+  /* Type Inference */
   
-  /* Lists */
+  // A helper function to check whether a JS type has a function type in it.
+  def hasFunctionTyp(t: Typ): Boolean = t match
+    case TFunction(_, _) => true
+    case _ => false
   
-  def compressRec[A](l: List[A]): List[A] = l match
-    case Nil | _ :: Nil => ???
-    case h1 :: (t1 @ h2 :: _) => ???
-  
-  def compressFold[A](l: List[A]): List[A] = l.foldRight(Nil: List[A]){
-    (h, acc) => ???
-  }
-  
-  def mapFirst[A](f: A => Option[A])(l: List[A]): List[A] = l match
-    case Nil => ???
-    case h :: t => ???
-  
-  /* Search Trees */
-  
-  enum Tree:
-    case Empty
-    case Node(l: Tree, d: Int, r: Tree)
+  def typeInfer(env: Map[String, Typ], e: Expr): Typ =
+    // Some shortcuts for convenience
+    def typ(e1: Expr) = typeInfer(env, e1)
+    def err[T](tgot: Typ, e1: Expr): T = throw StaticTypeError(tgot, e1)
+    def checkTyp(texp: Typ, e1: Expr): Typ =
+      val tgot = typ(e1)
+      if texp == tgot then texp else err(tgot, e1)
 
-    def insert(n: Int): Tree = this match
-      case Empty => Node(Empty, n, Empty)
-      case Node(l, d, r) => 
-        if n > d then Node(l.insert(n), d, r) else Node(l, d, r.insert(n))
-    
-    def foldLeft[A](z: A)(f: (A, Int) => A): A =
-      def loop(acc: A, t: Tree): A = t match
-        case Empty => ???
-        case Node(l, d, r) => ???
-      loop(z, this)
-    
-    def pretty: String =
-      def p(acc: String, t: Tree, indent: Int): String = t match
-        case Empty => acc
-        case Node(l, d, r) =>
-          val spacer = " " * indent
-          p("%s%d%n".format(spacer, d) + p(acc, l, indent + 2), r, indent + 2)
-      p("", this, 0)
+    e match
+      // TypePrint
+      case Print(e1) => typ(e1); TUndefined
+      
+      // TypeNum
+      case Num(_) => TNumber
+      
+      // TypeBool
+      case Bool(_) => TBool
+      
+      // TypeUndefined
+      case Undefined => TUndefined
+      
+      // TypeStr
+      case Str(_) => TString
+      
+      // TypeVar
+      case Var(x) => env(x)
+      
+      // TypeConst
+      case ConstDecl(x, e1, e2) => 
+        typeInfer(env + (x -> typ(e1)), e2)
+      
+      // TypeUMinus
+      case UnOp(UMinus, e1) => typ(e1) match
+        case TNumber => TNumber
+        case tgot => err(tgot, e1)
+      
+      // TypeNot
+      case UnOp(Not, e1) =>
+        ???
+  
+      case BinOp(bop, e1, e2) =>
+        bop match
+          // TypePlusNum, TypePlusStr
+          case Plus =>
+            ???
+            
+          // TypeArith
+          case Minus | Times | Div => 
+            ???
+          
+          // TypeEqual
+          case Eq | Ne => 
+            ???
+          
+          // TypeInequal
+          case Lt | Le | Gt | Ge =>
+            ???
+            
+          // TypeAndOr
+          case And | Or =>
+            ???
+            
+          // TypeSeq
+          case Seq =>
+            ???
+        
+      // TypeIf
+      case If(e1, e2, e3) =>
+        ???
 
-  import Tree._
-
-  def treeFromList(l: List[Int]): Tree =
-    l.foldLeft(Empty: Tree){ (acc, i) => acc insert i }
+        
+      // TypeFunction, TypeFunctionAnn, TypeFunctionRec
+      case Function(p, xs, tann, e1) => 
+        // Bind to env1 an environment that extends env with an appropriate binding if
+        // the function is potentially recursive.
+        val env1 = (p, tann) match
+          case (Some(f), Some(tret)) =>
+            val tprime = TFunction(xs map (_._2), tret)
+            env + (f -> tprime)
+          case (None, _) => env
+          case _ => err(TUndefined, e1)
+       
+        // Bind to env2 an environment that extends env1 with bindings for xs.
+        val env2 = ???
+        // Match on whether the return type is specified.
+        tann match
+          case None => ???
+          case Some(tret) => ???
+      
+      // TypeCall
+      case Call(e1, es) => typ(e1) match
+        case TFunction(txs, tret) if txs.length == es.length =>
+          txs.lazyZip(es).foreach { 
+            ???
+          }
+          tret
+          
+        case tgot => err(tgot, e1)
   
-  def sum(t: Tree): Int = t.foldLeft(0){ (acc, d) => acc + d }
+  /* JakartaScript Interpreter */
   
-  def strictlyOrdered(t: Tree): Boolean =
-    val (b, _) = t.foldLeft((true, None: Option[Int])) {
-      ???
-    }
-    b
+  def toNum(v: Val): Double = v match
+    case Num(n) => n
+    case _ => throw StuckError(v)
   
-  /* JakartaScript */
+  def toBool(v: Val): Boolean = v match
+    case Bool(b) => b
+    case _ => throw StuckError(v)
   
-  def toNum(v: Val): Double =
-    v match
-      case Num(n) => n
-      case Bool(false) => 0
-      case Bool(true) => 1
-      case Undefined => Double.NaN
-      case Str(s) => try s.toDouble catch { case _: Throwable => Double.NaN }
-      case Function(_, _, _) => Double.NaN
-  
-  def toBool(v: Val): Boolean =
-    v match
-      case Num(n) if (n compare 0.0) == 0 || (n compare -0.0) == 0 || n.isNaN => false
-      case Num(_) => true
-      case Bool(b) => b
-      case Undefined => false
-      case Str("") => false
-      case Str(_) => true
-      case Function(_, _, _) => true
-  
-  def toStr(v: Val): String =
-    v match
-      case Num(n) => if (n.isWhole) "%.0f" format n else n.toString
-      case Bool(b) => b.toString
-      case Undefined => "undefined"
-      case Str(s) => s
-      case Function(_, _, _) => "function"
-
+  def toStr(v: Val): String = v match
+    case Str(s) => s
+    case _ => throw StuckError(v)
   
   /*
    * Helper function that implements the semantics of inequality
@@ -145,11 +179,11 @@ object hw07 extends JsApp:
       case UnOp(uop, e1) => UnOp(uop, substX(e1))
       case BinOp(bop, e1, e2) => BinOp(bop, substX(e1), substX(e2))
       case If(b, e1, e2) => If(substX(b), substX(e1), substX(e2))
+      case Call(e0, es) =>
+        ???
       case ConstDecl(y, ed, eb) => 
         ConstDecl(y, substX(ed), if x == y then eb else substX(eb))
-      case Call(e0, es) => 
-        ???
-      case Function(p, ys, eb) => 
+      case Function(p, ys, tann, eb) => 
         ???
 
   
@@ -164,20 +198,22 @@ object hw07 extends JsApp:
     def eToBool(e: Expr): Boolean = toBool(eval(e))
     e match
       /* Base Cases */
+      
+      // EvalVal
       case v: Val => v
       
       /* Inductive Cases */
       
       // EvalPrint
       case Print(e) => println(eval(e).prettyVal); Undefined
-
+      
       // EvalUMinus
       case UnOp(UMinus, e1) => Num(- eToNum(e1))
-
+      
       // EvalNot
       case UnOp(Not, e1) => Bool(! eToBool(e1))
       
-      // EvalPlus*
+      // EvalPlusStr, EvalPlusNum
       case BinOp(Plus, e1, e2) => (eval(e1), eval(e2)) match
         case (Str(s1), v2) => Str(s1 + toStr(v2))
         case (v1, Str(s2)) => Str(toStr(v1) + s2)
@@ -188,62 +224,56 @@ object hw07 extends JsApp:
       case BinOp(Times, e1, e2) => Num(eToNum(e1) * eToNum(e2))
       case BinOp(Div, e1, e2) => Num(eToNum(e1) / eToNum(e2))
       
-      // EvalAnd*
+      // EvalAndTrue, EvalAndFalse
       case BinOp(And, e1, e2) => 
         val v1 = eval(e1)
-        if toBool(v1) then /* EvalAndTrue */ eval(e2)
-        else /* EvalAndFalse */ v1
+        if toBool(v1) then /* EvalAndTrue */ eval(e2) else /* EvalAndFalse */ v1
       
-      // EvalOr* 
+      // EvalOrTrue, EvalOrFalse
       case BinOp(Or, e1, e2) =>
         val v1 = eval(e1)
-        if toBool(v1) then /* EvalOrTrue */ v1
-        else /* EvalOrFalse */ eval(e2)
+        if toBool(v1) then /* EvalOrTrue */ v1 else /*EvalOrFalse */ eval(e2)
       
       // EvalSeq
       case BinOp(Seq, e1, e2) => eval(e1); eval(e2)
       
-      // EvalEqual, EvalTypeErrorEqual1, EvalTypeErrorEqual2
+      // EvalEqual, EvalInequalNum, EvalInequalStr
       case BinOp(bop, e1, e2) =>
         bop match
+          // EvalEqual
           case Eq | Ne => 
-            def checkFun(v: Expr): Unit = v match
-              case Function(_, _, _) => throw DynamicTypeError(e)
-              case _ => ()
             val v1 = eval(e1)
-            checkFun(v1)
             val v2 = eval(e2)
-            checkFun(v2)
             (bop: @unchecked) match
                case Eq => Bool(v1 == v2)
                case Ne => Bool(v1 != v2)
+          // EvalInequalNum, EvalInequalStr
           case _ => Bool(inequalityVal(bop, eval(e1), eval(e2)))
               
-      // EvalIf*
+      // EvalIfThen, EvalIfElse
       case If(e1, e2, e3) => 
-        if eToBool(e1) then /* EvalIfThen */ eval(e2)
+        if (eToBool(e1)) /* EvalIfThen */ eval(e2) 
         else /* EvalIfElse */ eval(e3)
       
       // EvalConstDecl
       case ConstDecl(x, ed, eb) => 
         eval(subst(eb, x, eval(ed)))
       
-      // EvalCall, EvalCallRec, EvalTypeErrorCall
+      // EvalCall, EvalCallRec
       case Call(e0, es) => 
         val v0 = eval(e0)
         v0 match
-          case Function(p, xs, eb) => 
+          case Function(p, xs, _, eb) => 
             val ebp = p match
               case None => eb
               case Some(x0) => subst(eb, x0, v0)
-            // evaluate es and extend result with Undefined values if es.size < xs.size
-            val vs_padded = ???
-            // compute common substitutions for EvalCall and EvalCallRec rules
-            val ebpp = xs.lazyZip(vs_padded).foldRight(ebp){
-              case ((xi, vi), ebpp) => ???
+            val vs = ???
+            // compute common substitutions for rules EvalCall and EvalCallRec
+            val ebpp = xs.lazyZip(vs).foldRight(ebp){
+              case (((xi, _), vi), ebpp) => ???
             }
             eval(ebpp)
-          case _ => throw DynamicTypeError(e)
+          case _ => throw StuckError(e)
         
       case Var(_) => throw StuckError(e) // this should never happen
    
@@ -266,10 +296,12 @@ object hw07 extends JsApp:
     if debug then
       println("Parsed expression:")
       println(expr)
-    
+
+    handle(fail()) {
+      val t = typeInfer(Map.empty, expr)
+    }
+
     handle(()) {
       val v = eval(expr)
       println(v.prettyVal)
     }
-
-end hw07

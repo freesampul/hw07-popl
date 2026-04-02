@@ -6,7 +6,7 @@ import util.JsException
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.parsing.input.StreamReader
-import Bop._, Uop._
+import Bop._, Uop._, Typ._
 
 object parse extends JavaTokenParsers:
   protected override val whiteSpace: Regex = """(\s|//.*|(?m)/\*(\*(?!/)|[^*])*\*/)+""".r
@@ -118,23 +118,20 @@ object parse extends JavaTokenParsers:
     "(" ~> rep(condExpr <~ ",") ~ opt(condExpr) <~ ")" ^^ { case es ~ eopt => es ++ eopt }
 
   def functionExpr: Parser[Expr] =
-    positioned("function" ~> opt(ident) ~ functionParams ~ functionBody ^^ { case p ~ params ~ e => Function(p, params, e) }) |
-      positioned((ident <~ "=>") ~ expr ^^ { case param ~ e => Function(None, List(param), e) }) |
-      positioned((functionParams <~ "=>") ~ expr ^^ { case params ~ e => Function(None, params, e) }) |
+    positioned("function" ~> opt(ident) ~ functionParams ~ opt(typAnn) ~ functionBody ^^
+      { case p~params~tann~e => Function(p, params, tann, e) }) |
+      positioned((functionParams <~ "=>") ~ expr ^^ { case params ~ e => Function(None, params, None, e) }) |
       primaryExpr
 
-  def functionParams: Parser[List[String]] =
+  def functionParams: Parser[Params] =
     "(" ~> params <~ ")"
-
-  def params: Parser[List[String]] =
-    rep(ident <~ ",") ~ opt(ident) ^^ { case xs ~ xopt => xs ++ xopt }
 
   def functionBody: Parser[Expr] =
     positioned("{" ~> rep(basicStmt) ~ opt("return" ~> expr <~ opt(stmtSep)) <~ "}" ^^ { case (sts: List[Expr]) ~ lst =>
       val stmts = sts :+ (lst getOrElse Undefined)
       if stmts == Nil then Undefined
       else stmts reduceRight {
-        case (f@Function(Some(x), _, _), st2) =>
+        case (f@Function(Some(x), _, _, _), st2) =>
           ConstDecl(x, f, st2)
         case (ConstDecl(v, e1, _), st2) => ConstDecl(v, e1, st2)
         case (st1, st2) => BinOp(Seq, st1, st2)
@@ -164,6 +161,41 @@ object parse extends JavaTokenParsers:
   override def stringLiteral: Parser[String] =
     ("\"" + """([^"\p{Cntrl}\\]|\\[\\'"bfnrt]|\\[0-7]{3}|\\u[a-fA-F0-9]{2}|\\u[a-fA-F0-9]{4})*""" + "\"").r |
       ("\'" + """([^'\p{Cntrl}\\]|\\[\\'"bfnrt]|\\[0-7]{3}|\\u[a-fA-F0-9]{2}|\\u[a-fA-F0-9]{4})*""" + "\'").r
+
+      /** Type expressions */    
+  def typ: Parser[Typ] =
+    functionTyp |
+    baseTyp
+    
+  def baseTyp: Parser[Typ] =
+    "Bool" ^^^ TBool |
+    "String" ^^^ TString |
+    "Num" ^^^ TNumber |
+    "Undefined" ^^^ TUndefined
+        
+  def functionTyp: Parser[TFunction] =
+    argTypList ~ ("=>" ~> typ) ^^
+      { case txs~typ => TFunction(txs, typ) }
+  
+  def argTypList: Parser[List[Typ]] =
+    baseTyp ^^ { t => List(t) } |
+    "(" ~> rep(typ <~ ",") ~ opt(typ) <~ ")" ^^
+    { case ts~topt => ts ++ topt }
+    
+  def typAnn: Parser[Typ] =
+    ":" ~> typ
+    
+  def typedIdent: Parser[(String, Typ)] =
+    ident ~ typAnn ^^ { case x~typ => (x, typ) }
+    
+  def typedIdentList(sep: String): Parser[List[(String, Typ)]] =
+    rep(typedIdent <~ sep) ~ opt(typedIdent) ^^
+    { case txs~txopt => txs ++ txopt }
+
+  def params: Parser[Params] =
+    rep(typedIdent <~ ",") ~ opt(typedIdent) ^^
+    { case txs~txopt => txs ++ txopt } 
+
 
   /** utility functions */
   private def getExpr(p: ParseResult[Expr]): Expr =

@@ -1,4 +1,4 @@
-false && console.log("a");
+false && console.log("a"); // type error
 true && console.log("b");
 false || console.log("c");
 true || console.log("d");
