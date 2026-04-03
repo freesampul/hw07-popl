@@ -110,34 +110,34 @@ object parse extends JavaTokenParsers:
 
   def simpleCallExpr: Parser[Expr] =
     positioned("console.log(" ~> condExpr <~ ")" ^^ Print.apply) |
-      positioned(functionExpr ~ rep(callArgs) ^^ { case e1 ~ args =>
-        args.foldLeft(e1) { case (e1, e2) => Call(e1, e2).setPos(e1.pos) }
+      positioned(functionExpr ~ opt(callArg) ^^ {
+        case e1 ~ Some(arg) => Call(e1, arg).setPos(e1.pos)
+        case e1 ~ None => e1
       })
 
-  def callArgs: Parser[List[Expr]] =
-    "(" ~> rep(condExpr <~ ",") ~ opt(condExpr) <~ ")" ^^ { case es ~ eopt => es ++ eopt }
+  def callArg: Parser[Expr] =
+    "(" ~> condExpr <~ ")"
 
   def functionExpr: Parser[Expr] =
-    positioned("function" ~> opt(ident) ~ functionParams ~ opt(typAnn) ~ functionBody ^^
-      { case p~params~tann~e => Function(p, params, tann, e) }) |
-      positioned((functionParams <~ "=>") ~ expr ^^ { case params ~ e => Function(None, params, None, e) }) |
+    positioned("function" ~> opt(ident) ~ ("(" ~> typedIdent <~ ")") ~ opt(typAnn) ~ functionBody ^^ {
+      case p ~ (x, tannx) ~ tann ~ e => Function(p, x, tannx, tann, e)
+      }) |
+      positioned(("(" ~> typedIdent <~ ")") ~ ("=>" ~> expr) ^^ {
+        case (x, tannx) ~ e => Function(None, x, tannx, None, e)
+      }) |
       primaryExpr
-
-  def functionParams: Parser[Params] =
-    "(" ~> params <~ ")"
 
   def functionBody: Parser[Expr] =
     positioned("{" ~> rep(basicStmt) ~ opt("return" ~> expr <~ opt(stmtSep)) <~ "}" ^^ { case (sts: List[Expr]) ~ lst =>
       val stmts = sts :+ (lst getOrElse Undefined)
       if stmts == Nil then Undefined
       else stmts reduceRight {
-        case (f@Function(Some(x), _, _, _), st2) =>
+        case (f@Function(Some(x), _, _, _, _), st2) =>
           ConstDecl(x, f, st2)
         case (ConstDecl(v, e1, _), st2) => ConstDecl(v, e1, st2)
         case (st1, st2) => BinOp(Seq, st1, st2)
       }
     })
-
 
   def primaryExpr: Parser[Expr] =
     literalExpr |
@@ -172,11 +172,10 @@ object parse extends JavaTokenParsers:
     "String" ^^^ TString |
     "Num" ^^^ TNumber |
     "Undefined" ^^^ TUndefined
-        
+
   def functionTyp: Parser[TFunction] =
-    argTypList ~ ("=>" ~> typ) ^^
-      { case txs~typ => TFunction(txs, typ) }
-  
+    baseTyp ~ ("=>" ~> typ) ^^ { case tx ~ tret => TFunction(tx, tret) }
+
   def argTypList: Parser[List[Typ]] =
     baseTyp ^^ { t => List(t) } |
     "(" ~> rep(typ <~ ",") ~ opt(typ) <~ ")" ^^
@@ -187,15 +186,6 @@ object parse extends JavaTokenParsers:
     
   def typedIdent: Parser[(String, Typ)] =
     ident ~ typAnn ^^ { case x~typ => (x, typ) }
-    
-  def typedIdentList(sep: String): Parser[List[(String, Typ)]] =
-    rep(typedIdent <~ sep) ~ opt(typedIdent) ^^
-    { case txs~txopt => txs ++ txopt }
-
-  def params: Parser[Params] =
-    rep(typedIdent <~ ",") ~ opt(typedIdent) ^^
-    { case txs~txopt => txs ++ txopt } 
-
 
   /** utility functions */
   private def getExpr(p: ParseResult[Expr]): Expr =

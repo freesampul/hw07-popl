@@ -1,6 +1,6 @@
 ## Homework 7
 
-The deadline for Homework 7 is Thursday, April 9th, 2pm. 
+The deadline for Homework 7 is Friday, April 10th, 2pm. 
 
 Refer to the homework handout [`hw07.pdf`](hw07.pdf) for details about the assignment. This file provides some information to help you get started with setting up your development environment for the homework assignments.
 
@@ -12,10 +12,10 @@ provided in the announcement of this homework assignment on
 Brightspace. After clicking on the link, you will receive an email from
 GitHub, when your copy of the repository is ready. It will be
 available at
-`https://github.com/nyu-popl-sp26/hw07-<YOUR-GITHUB-USERNAME>`.
+`https://github.com/nyu-popl-sp26/homework-7-<YOUR-GITHUB-USERNAME>`.
 Note that this may take a few minutes.
 
-* Open a browser at `https://github.com/nyu-popl-sp26/hw07-<YOUR-GITHUB-USERNAME>` with your GitHub username inserted at the appropriate place in the URL.
+* Open a browser at `https://github.com/nyu-popl-sp26/homework-7-<YOUR-GITHUB-USERNAME>` with your GitHub username inserted at the appropriate place in the URL.
 * Choose a place on your computer for your homework assignments to reside and open a terminal to that location.
 * Execute the following git command: <br/>
   ```bash
@@ -36,7 +36,7 @@ The assignment consists of a written part (Problem 1) and a coding part (Problem
    src/main/scala/popl/hw07.scala 
    ``` 
    relative to the root directory of the repository. Follow the instructions in the
-   [in-class-code](https://github.com/nyu-popl-fa23/in-class-code)
+   [in-class-code](https://github.com/nyu-popl-sp26/in-class-code)
    repository to import the project into IntelliJ (or use your other
    favorite IDE or editor to work on the assignment).
 

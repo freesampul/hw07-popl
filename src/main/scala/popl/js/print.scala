@@ -20,7 +20,7 @@ object print extends PrettyPrinter:
       case Bool(b) => b.toString
       case Str(s) => s
       case Undefined => "undefined"
-      case Function(p, _, _, _) =>
+      case Function(p, _, _, _, _) =>
         "[Function%s]".format(p match { case None => "" case Some(s) => ": " + s })
     }
   }
@@ -53,12 +53,9 @@ object print extends PrettyPrinter:
       case TNumber => "Num"
       case TString => "String"
       case TUndefined => "Undefined"
-      case TFunction(txs, tret) =>
-        parens(ssep(txs map showTyp, comma <> space)) <+> "=>" <+> showTyp(tret)
-  
-  def showTIdList(txs: Params, sep: Doc = comma <> space): Doc = 
-    ssep(txs map showTId, sep)
-    
+      case TFunction(tx, tret) =>
+        showTyp(tx) <+> "=>" <+> showTyp(tret)
+
   def showTId(tid: (String, Typ)): Doc =
     tid._1 <> colon <+> showTyp(tid._2)
 
@@ -129,11 +126,11 @@ object print extends PrettyPrinter:
         "console.log" <> parens(showJS(e))
       case ConstDecl(x, e1, e2) =>
         showDecl(x, e1) <> line <> showJS(e2)
-      case Call(e1, List(e@BinOp(Seq, _, _) ) ) if isStmt(e) =>
-        showJS(e1) <> parens(braces(line <> indent(showJS(e)) <> line))
-      case Call(e1, es) =>
-        showJS(e1) <> parens(hsep(es map showJS, comma))
-      case Function(p, xs, tann, e) =>
+      case Call(e1, e2@BinOp(Seq, _, _)) if isStmt(e2) =>
+        showJS(e1) <> parens(braces(line <> indent(showJS(e2)) <> line))
+      case Call(e1, e2) =>
+        showJS(e1) <> parens(showJS(e2))
+      case Function(p, x, tannx, tann, e) =>
         def showReturn(e: Expr): Doc = e match
           case BinOp(Seq, e1, e2) =>
             line <> showJS(e1) <> semi <> showReturn(e2)
@@ -141,13 +138,14 @@ object print extends PrettyPrinter:
             line <> showDecl(x, e1) <> showReturn(e2)
           case Undefined => emptyDoc
           case e => line <> "return" <+> showJS(e)
-
-        val name = p getOrElse ""
-        val params = showTIdList(xs)
-        val rtyp = tann map (":" <+> showTyp(_)) getOrElse emptyDoc
-        "function" <+> name <> 
-          params <> rtyp <+> braces(nest(showReturn(e)) <> line)
-
+      
+        val name = p.getOrElse("")
+        val param = showTId((x, tannx))
+        val rtyp = tann.map(t => colon <+> showTyp(t)).getOrElse(emptyDoc)
+      
+        "function" <+> name <> parens(param) <> rtyp <+>
+          braces(nest(showReturn(e)) <> line)
+      
   end showJS
 
   def prettyAST(x: Any): String = pretty(any(x)).layout

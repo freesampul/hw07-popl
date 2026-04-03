@@ -101,12 +101,12 @@ object hw07 extends js.util.JsApp:
 
         
       // TypeFunction, TypeFunctionAnn, TypeFunctionRec
-      case Function(p, xs, tann, e1) => 
+      case Function(p, x, tannx, tann, e1) =>
         // Bind to env1 an environment that extends env with an appropriate binding if
         // the function is potentially recursive.
         val env1 = (p, tann) match
           case (Some(f), Some(tret)) =>
-            val tprime = TFunction(xs map (_._2), tret)
+            val tprime = TFunction(tannx, tret)
             env + (f -> tprime)
           case (None, _) => env
           case _ => err(TUndefined, e1)
@@ -120,10 +120,7 @@ object hw07 extends js.util.JsApp:
       
       // TypeCall
       case Call(e1, es) => typ(e1) match
-        case TFunction(txs, tret) if txs.length == es.length =>
-          txs.lazyZip(es).foreach { 
-            ???
-          }
+        case TFunction(tx, tret) =>
           tret
           
         case tgot => err(tgot, e1)
@@ -183,7 +180,7 @@ object hw07 extends js.util.JsApp:
         ???
       case ConstDecl(y, ed, eb) => 
         ConstDecl(y, substX(ed), if x == y then eb else substX(eb))
-      case Function(p, ys, tann, eb) => 
+      case Function(p, y, tanny, tann, eb) =>
         ???
 
   
@@ -263,15 +260,13 @@ object hw07 extends js.util.JsApp:
       case Call(e0, es) => 
         val v0 = eval(e0)
         v0 match
-          case Function(p, xs, _, eb) => 
+          case Function(p, x, tannx, _, eb) =>
             val ebp = p match
               case None => eb
               case Some(x0) => subst(eb, x0, v0)
-            val vs = ???
+            val v = ???
             // compute common substitutions for rules EvalCall and EvalCallRec
-            val ebpp = xs.lazyZip(vs).foldRight(ebp){
-              case (((xi, _), vi), ebpp) => ???
-            }
+            val ebpp = subst(ebp, x, v)
             eval(ebpp)
           case _ => throw StuckError(e)
         
@@ -282,7 +277,7 @@ object hw07 extends js.util.JsApp:
   def evaluate(s: String): Val = eval(parse.fromString(s))
     
   /* Interface to run your interpreter from the command line.  You can ignore the code below. */ 
-  
+
   def processFile(file: java.io.File): Unit =
     if debug then
       println("============================================================")
