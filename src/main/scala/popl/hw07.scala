@@ -67,37 +67,55 @@ object hw07 extends js.util.JsApp:
       
       // TypeNot
       case UnOp(Not, e1) =>
-        ???
+        typ(e1) match
+          case TBool => TBool
+          case tgot => err(tgot, e1)
   
       case BinOp(bop, e1, e2) =>
         bop match
           // TypePlusNum, TypePlusStr
           case Plus =>
-            ???
+            (typ(e1), typ(e2)) match
+              case (TNumber, TNumber) => TNumber
+              case (TString, TString) => TString
+              case (tgot, _) => err(tgot, e1)
             
           // TypeArith
           case Minus | Times | Div => 
-            ???
+            checkTyp(TNumber, e1)
+            checkTyp(TNumber, e2)
+            TNumber
           
           // TypeEqual
           case Eq | Ne => 
-            ???
+            val t1 = typ(e1)
+            val t2 = typ(e2)
+            if t1 == t2 && !hasFunctionTyp(t1) then TBool
+            else err(t2, e2)
           
           // TypeInequal
           case Lt | Le | Gt | Ge =>
-            ???
+            (typ(e1), typ(e2)) match
+              case (TNumber, TNumber) | (TString, TString) => TBool
+              case (_, tgot) => err(tgot, e2)
             
           // TypeAndOr
           case And | Or =>
-            ???
+            checkTyp(TBool, e1)
+            checkTyp(TBool, e2)
+            TBool
             
           // TypeSeq
           case Seq =>
-            ???
+            typ(e1)
+            typ(e2)
         
       // TypeIf
       case If(e1, e2, e3) =>
-        ???
+        checkTyp(TBool, e1)
+        val t2 = typ(e2)
+        val t3 = typ(e3)
+        if t2 == t3 then t2 else err(t3, e3)
 
         
       // TypeFunction, TypeFunctionAnn, TypeFunctionRec
@@ -112,15 +130,18 @@ object hw07 extends js.util.JsApp:
           case _ => err(TUndefined, e1)
        
         // Bind to env2 an environment that extends env1 with bindings for xs.
-        val env2 = ???
+        val env2 = env1 + (x -> tannx)
         // Match on whether the return type is specified.
         tann match
-          case None => ???
-          case Some(tret) => ???
+          case None => TFunction(tannx, typeInfer(env2, e1))
+          case Some(tret) =>
+            val tgot = typeInfer(env2, e1)
+            if tgot == tret then TFunction(tannx, tret) else err(tgot, e1)
       
       // TypeCall
       case Call(e1, es) => typ(e1) match
         case TFunction(tx, tret) =>
+          checkTyp(tx, es)
           tret
           
         case tgot => err(tgot, e1)
@@ -177,11 +198,12 @@ object hw07 extends js.util.JsApp:
       case BinOp(bop, e1, e2) => BinOp(bop, substX(e1), substX(e2))
       case If(b, e1, e2) => If(substX(b), substX(e1), substX(e2))
       case Call(e0, es) =>
-        ???
+        Call(substX(e0), substX(es))
       case ConstDecl(y, ed, eb) => 
         ConstDecl(y, substX(ed), if x == y then eb else substX(eb))
       case Function(p, y, tanny, tann, eb) =>
-        ???
+        if p.contains(x) || x == y then e
+        else Function(p, y, tanny, tann, substX(eb))
 
   
   /*
@@ -264,7 +286,7 @@ object hw07 extends js.util.JsApp:
             val ebp = p match
               case None => eb
               case Some(x0) => subst(eb, x0, v0)
-            val v = ???
+            val v = eval(es)
             // compute common substitutions for rules EvalCall and EvalCallRec
             val ebpp = subst(ebp, x, v)
             eval(ebpp)
