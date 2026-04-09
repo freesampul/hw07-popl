@@ -41,8 +41,10 @@ object hw07 extends JsApp:
   }
   
   def mapFirst[A](f: A => Option[A])(l: List[A]): List[A] = l match
-    case Nil => ???
-    case h :: t => ???
+    case Nil => Nil
+    case h :: t => f(h) match
+      case Some(b) => b :: t
+      case None => h :: mapFirst(f)(t)
   
   /* Search Trees */
   
@@ -57,8 +59,11 @@ object hw07 extends JsApp:
     
     def foldLeft[A](z: A)(f: (A, Int) => A): A =
       def loop(acc: A, t: Tree): A = t match
-        case Empty => ???
-        case Node(l, d, r) => ???
+        case Empty => acc
+        case Node(l, d, r) =>
+          val acc1 = loop(acc, l)
+          val acc2 = f(acc1, d)
+          loop(acc2, r)
       loop(z, this)
     
     def pretty: String =
@@ -78,7 +83,8 @@ object hw07 extends JsApp:
   
   def strictlyOrdered(t: Tree): Boolean =
     val (b, _) = t.foldLeft((true, None: Option[Int])) {
-      ???
+      case ((ok, None), d) => (ok, Some(d))
+      case ((ok, Some(prev)), d) => (ok && prev > d, Some(d))
     }
     b
   
