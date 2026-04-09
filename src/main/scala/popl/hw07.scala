@@ -158,9 +158,10 @@ object hw07 extends JsApp:
       case ConstDecl(y, ed, eb) => 
         ConstDecl(y, substX(ed), if x == y then eb else substX(eb))
       case Call(e0, es) => 
-        ???
+        Call(substX(e0), es.map(substX))
       case Function(p, ys, eb) => 
-        ???
+        if p.contains(x) || ys.contains(x) then e
+        else Function(p, ys, substX(eb))
 
   
   /*
@@ -247,10 +248,9 @@ object hw07 extends JsApp:
               case None => eb
               case Some(x0) => subst(eb, x0, v0)
             // evaluate es and extend result with Undefined values if es.size < xs.size
-            val vs_padded = ???
-            // compute common substitutions for EvalCall and EvalCallRec rules
+            val vs_padded = es.map(eval).padTo(xs.size, Undefined)
             val ebpp = xs.lazyZip(vs_padded).foldRight(ebp){
-              case ((xi, vi), ebpp) => ???
+              case ((xi, vi), ebpp) => subst(ebpp, xi, vi)
             }
             eval(ebpp)
           case _ => throw DynamicTypeError(e)
