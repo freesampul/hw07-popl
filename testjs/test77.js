@@ -1,6 +1,6 @@
 const r1 = 1.01;
 const r2 = 1.01;
-const f = function f(x) { console.log(r1);
+const f = function f(x: Num): Num { console.log(r1);
                 const temp = r2;
                 const r2 = r1 + r2;
                 const r1 = temp;

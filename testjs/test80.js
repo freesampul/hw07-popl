@@ -1,4 +1,4 @@
-console.log("a") + 
+console.log("a") + // type error
 console.log("b") -
 console.log("c") *
 console.log("d") /

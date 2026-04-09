@@ -2,7 +2,7 @@ package popl.js
 
 import org.bitbucket.inkytonik.kiama.output.PrettyPrinter
 import ast._
-import Bop._, Uop._
+import Bop._, Uop._, Typ._
 
 object print extends PrettyPrinter:
   override val defaultIndent = 2
@@ -20,7 +20,7 @@ object print extends PrettyPrinter:
       case Bool(b) => b.toString
       case Str(s) => s
       case Undefined => "undefined"
-      case Function(p, _, _) =>
+      case Function(p, _, _, _, _) =>
         "[Function%s]".format(p match { case None => "" case Some(s) => ": " + s })
     }
   }
@@ -47,12 +47,23 @@ object print extends PrettyPrinter:
       case If(_, _, _) | ConstDecl(_, _, _) => 15
     
 
+  def showTyp(typ: Typ): Doc = 
+    typ match
+      case TBool => "Bool"
+      case TNumber => "Num"
+      case TString => "String"
+      case TUndefined => "Undefined"
+      case TFunction(tx, tret) =>
+        showTyp(tx) <+> "=>" <+> showTyp(tret)
+
+  def showTId(tid: (String, Typ)): Doc =
+    tid._1 <> colon <+> showTyp(tid._2)
+
+
   /* Associativity of binary operators */
-  sealed abstract class Assoc
-
-  case object Left extends Assoc
-
-  case object Right extends Assoc
+  enum Assoc:
+    case Left, Right
+  import Assoc._
 
   /*
    * Get associativity of a binary operator
@@ -98,15 +109,16 @@ object print extends PrettyPrinter:
             if isStmt(e2) then ";" <> line else ", "
 
         def eToDoc(e1: Expr, as: Assoc): Doc =
-          if (prec(e1) < prec(e) || prec(e1) == prec(e) && as == assoc(bop))
-            showJS(e1)
+          if prec(e1) < prec(e) || prec(e1) == prec(e) && as == assoc(bop) 
+          then showJS(e1)
           else parens(showJS(e1))
 
         eToDoc(e1, Left) <> op <> eToDoc(e2, Right)
 
       case ei@If(e1, e2, e3) =>
         def eToDoc(e: Expr): Doc =
-          if (prec(e) < prec(ei)) showJS(e)
+          if prec(e) < prec(ei)
+          then showJS(e)
           else parens(showJS(e))
         eToDoc(e1) <+> "?" <+> eToDoc(e2) <+> ":" <+> eToDoc(e3)
 
@@ -114,11 +126,11 @@ object print extends PrettyPrinter:
         "console.log" <> parens(showJS(e))
       case ConstDecl(x, e1, e2) =>
         showDecl(x, e1) <> line <> showJS(e2)
-      case Call(e1, List(e@BinOp(Seq, _, _) ) ) if isStmt(e) =>
-        showJS(e1) <> parens(braces(line <> indent(showJS(e)) <> line))
-      case Call(e1, es) =>
-        showJS(e1) <> parens(hsep(es map showJS, comma))
-      case Function(p, xs, e) =>
+      case Call(e1, e2@BinOp(Seq, _, _)) if isStmt(e2) =>
+        showJS(e1) <> parens(braces(line <> indent(showJS(e2)) <> line))
+      case Call(e1, e2) =>
+        showJS(e1) <> parens(showJS(e2))
+      case Function(p, x, tannx, tann, e) =>
         def showReturn(e: Expr): Doc = e match
           case BinOp(Seq, e1, e2) =>
             line <> showJS(e1) <> semi <> showReturn(e2)
@@ -126,15 +138,19 @@ object print extends PrettyPrinter:
             line <> showDecl(x, e1) <> showReturn(e2)
           case Undefined => emptyDoc
           case e => line <> "return" <+> showJS(e)
-
-        val name = p getOrElse ""
-        val params = parens(hsep(xs map text, comma))
-        "function" <+> name <>
-          params <+> braces(nest(showReturn(e)) <> line)
-
-    end match
+      
+        val name = p.getOrElse("")
+        val param = showTId((x, tannx))
+        val rtyp = tann.map(t => colon <+> showTyp(t)).getOrElse(emptyDoc)
+      
+        "function" <+> name <> parens(param) <> rtyp <+>
+          braces(nest(showReturn(e)) <> line)
+      
+  end showJS
 
   def prettyAST(x: Any): String = pretty(any(x)).layout
 
   def prettyJS(e: Expr): String = pretty(showJS(e)).layout
+
+  def prettyTyp(typ: Typ): String = pretty(showTyp(typ)).layout
 

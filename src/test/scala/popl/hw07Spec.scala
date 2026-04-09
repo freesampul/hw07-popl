@@ -139,3 +139,4 @@ class hw07Spec extends AnyFlatSpec:
       typeInfer(Map.empty, fbad3)
     }
   }  
+

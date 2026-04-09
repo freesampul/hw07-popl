@@ -1,5 +1,5 @@
-const repeat = function(s) {
-  return function loop(n) {
+const repeat = function(s: String) {
+  return function loop(n: Num): String {
     return n === 0 ? "" : s + loop(n - 1)
   }
 };

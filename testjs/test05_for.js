@@ -1,15 +1,21 @@
-const plus = x => y => x + y;
+const plus = function (x: Num, y: Num) { return x + y };
 
-console.log( plus(3)(4) );
+console.log( plus(3, 4) );
 
-const forloop =
-  body =>
-    function reduce(n) {
-      return acc => n === 0 ? acc : body(n)(reduce(n - 1)(acc))
-    };
+
+const for =
+  function (f: (Num, Num) => Num) {
+    return function reduce(n: Num, acc: Num): Num {
+      return n === 0 ? acc : reduce(n - 1, f(n, acc))
+    }
+  };
 
 const factorial =
-  n => forloop(i => acc => i * acc)(n)(1);
+  function (n: Num) {
+    return for(function (i: Num, acc: Num) {
+      return i * acc
+    })(n, 1)
+  };
 
 console.log( factorial(4) );
 console.log( factorial(5) );

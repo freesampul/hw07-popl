@@ -1,3 +1,3 @@
 const g = function() { console.log("hello"); };
-const f = x => x;
-f(1, g())
+const f = function(x: Num) { return x; };
+f(1, g()) // type error

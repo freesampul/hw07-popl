@@ -1,3 +1,3 @@
-const a = function (x) { return x };
+const a = function (x: Undefined) { return x };
 const b = 5;
-b !== a
+b !== a // type error

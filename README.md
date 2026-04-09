@@ -1,6 +1,6 @@
 ## Homework 7
 
-The deadline for Homework 7 is Wednesday, November 8, 8pm. The late submission deadline is Tuesday, November 14, 4pm.
+The deadline for Homework 7 is Friday, April 10th, 2pm. 
 
 Refer to the homework handout [`hw07.pdf`](hw07.pdf) for details about the assignment. This file provides some information to help you get started with setting up your development environment for the homework assignments.
 
@@ -12,43 +12,39 @@ provided in the announcement of this homework assignment on
 Brightspace. After clicking on the link, you will receive an email from
 GitHub, when your copy of the repository is ready. It will be
 available at
-`https://github.com/nyu-popl-fa23/hw07-<YOUR-GITHUB-USERNAME>`.
+`https://github.com/nyu-popl-sp26/homework-7-<YOUR-GITHUB-USERNAME>`.
 Note that this may take a few minutes.
 
-* Open a browser at `https://github.com/nyu-popl-fa23/hw07-<YOUR-GITHUB-USERNAME>` with your Github username inserted at the appropriate place in the URL.
+* Open a browser at `https://github.com/nyu-popl-sp26/homework-7-<YOUR-GITHUB-USERNAME>` with your GitHub username inserted at the appropriate place in the URL.
 * Choose a place on your computer for your homework assignments to reside and open a terminal to that location.
 * Execute the following git command: <br/>
   ```bash
-  git clone https://github.com/nyu-popl-fa23/hw07-<YOUR-GITHUB-USERNAME>.git hw07
+  git clone https://github.com/nyu-popl-sp26/homework-7-<YOUR-GITHUB-USERNAME>.git hw07
   cd hw07
   ```
 
-Please make sure that you clone the copy of your own version of this repository that is identified by your Github username, rather than the template repository.
+Please make sure that you clone the copy of your own version of this repository that is identified by your GitHub username, rather than the template repository.
 
-The problems that you you should solve for this assignment are described in the file `hw07.pdf`.
+The problems that you should solve for this assignment are described in the file `hw07.pdf`.
 
-The code template for solving this assignment is provided in the file 
-```
-src/main/scala/popl/hw07.scala 
-``` 
+The assignment consists of a written part (Problem 1) and a coding part (Problem 2).
 
-relative to the root directory of the repository. 
+1. Your solutions to the written parts of the assignment should be either put in a plain text file called `solution.txt`, or a PDF file called `solution.pdf`. Scans of clearly readable hand-written solutions are also accepted. Please stick to this naming scheme.
 
-The code template for the bonus problem (Problem 3) is provided in the file
-```
-src/main/scala/popl/calendar.scala 
-``` 
+2. The code template for solving Problem 2 is provided in the file 
+   ```
+   src/main/scala/popl/hw07.scala 
+   ``` 
+   relative to the root directory of the repository. Follow the instructions in the
+   [in-class-code](https://github.com/nyu-popl-sp26/in-class-code)
+   repository to import the project into IntelliJ (or use your other
+   favorite IDE or editor to work on the assignment).
 
-Follow the instructions in the
-[in-class-code](https://github.com/nyu-popl-fa23/in-class-code)
-repository to import the project into InteliJ (or use your other
-favorite IDE or editor to work on the assignment).
-
-You can implement the solutions by replacing the `???`  expressions in
-`hw07.scala` and `calendar.scala` with your code for the corresponding
-part. Please do not modify the signatures of the given function
-definitions (i.e. do not change the names of these functions, their
-arguments, or their return types).
+   You can implement the solutions by replacing the `???`
+   expressions in `hw07.scala` with your code for the corresponding
+   part. Please do not modify the signatures of the given function
+   definitions (i.e. do not change the names of these functions, their
+   arguments, or their return types).
 
 
 ### Submitting your solution
@@ -68,7 +64,7 @@ You can replace "solution" by a more meaningful commit message.
 
 Refresh your browser window pointing at
 ```
-https://github.com/nyu-popl-fa23/hw07-<YOUR-GITHUB-USERNAME>/
+https://github.com/nyu-popl-sp26/homework-7-<YOUR-GITHUB-USERNAME>/
 ```
 and double-check that your solution has been uploaded correctly.
 
@@ -107,7 +103,7 @@ In general, I strongly advise you to write your own additional unit tests and Ja
 
 As the complexity of your interpreter code increases over the next homework assignments, you will sooner or later start to introduce debugging output in your interpreter. In particular, you will probably want to pretty print the Scala representation of JavaScript expressions. There are two ways to pretty print Scala values `e` of type `Expr`. Use
 
-* ```println(e.prettyJS)``` to print an expression `e` in concrete JavaScript syntax
+* ```println(e.prettyJS())``` to print an expression `e` in concrete JavaScript syntax
 * ```println(e)``` to print an expression `e` as an abstract syntax tree represented as a Scala algebraic data type
 
 One other useful feature that the parser provides for helping with debugging is that it decorates every expression of the parsed JavaScript input file with the position (i.e. line and column number) from which it originated in the input file. Given a value `e` of type `Expr`, you can access the source code line and number with `e.pos.line` and `e.pos.column`, respectively. 
